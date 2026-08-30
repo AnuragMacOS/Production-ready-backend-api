@@ -78,6 +78,5 @@ The application follows a production-ready **MVC (Model-View-Controller)** patte
 
 **Anurag Bhatt**
 * Full Stack Developer
-
 ---
 *This project strictly follows the architecture defined in the [Design Document](PRD.md).*
