@@ -1,6 +1,10 @@
-# production-ready-backend-api
+# Production-ready-backend-api
 
-RESTful backend API built with Node.js, Express, and MongoDB. Implements session management with dual-token JWT rotation via HTTPOnly cookies, email verification workflows, input validation middleware, and centralized error handling.
+> A robust, RESTful backend API built with Node.js, Express, and MongoDB. Features dual-token JWT session rotation via HTTPOnly cookies, email verification workflows, input validation middleware, and centralized error handling.
+
+![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=nodedotjs&logoColor=white) ![Express.js](https://img.shields.io/badge/Express.js-5.x-000000?logo=express&logoColor=white) ![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?logo=mongodb&logoColor=white) ![Auth](https://img.shields.io/badge/Auth-JWT%20%26%20Cookies-orange) ![License](https://img.shields.io/badge/License-MIT-blue)
+
+---
 
 ## Architecture and design
 
@@ -150,4 +154,4 @@ All endpoints return a standardized JSON structure.
 
 ## License
 
-ISC
+MIT
