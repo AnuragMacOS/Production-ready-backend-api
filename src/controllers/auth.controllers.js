@@ -10,7 +10,7 @@ import jwt from "jsonwebtoken";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
-    const user = await User.findOne(userId);
+    const user = await User.findById(userId);
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
@@ -431,16 +431,20 @@ const changeCurrentPassword = asyncHandler( async(req,res) =>
 
 
 
- export {
-    registerUser,
-    login,
-    logoutUser,
-    getCurrentUser,
-    verifyEmail,
-    resendEmailVerification,
-    refreshAccesToken,
-    forgotPassowordRequest,
-    resetForgotpassword,
-    changeCurrentPassword,
- 
-   };
+const refreshAccessToken = refreshAccesToken;
+const forgotPasswordRequest = forgotPassowordRequest;
+
+export {
+  registerUser,
+  login,
+  logoutUser,
+  getCurrentUser,
+  verifyEmail,
+  resendEmailVerification,
+  refreshAccessToken,
+  refreshAccesToken,
+  forgotPasswordRequest,
+  forgotPassowordRequest,
+  resetForgotpassword,
+  changeCurrentPassword,
+};

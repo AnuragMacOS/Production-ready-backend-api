@@ -1,7 +1,7 @@
 {
-  "name": "projmanagement",
+  "name": "production-ready-backend-api",
   "version": "1.0.0",
-  "description": "a project management application for beginners",
+  "description": "Production-ready Express REST API with dual-token rotation, HTTPOnly cookies, email verification flows, and centralized validation",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -9,11 +9,12 @@
     "start": "node src/index.js"
   },
   "keywords": [
-    "udemy",
-    "course",
-    "backend",
-    "API",
-    "creation"
+    "nodejs",
+    "express",
+    "mongodb",
+    "rest-api",
+    "jwt-authentication",
+    "backend-architecture"
   ],
   "author": "Anurag Bhatt",
   "license": "ISC",

@@ -1,82 +1,153 @@
-# 🚀 Production Grade Backend API
+# production-ready-backend-api
 
-> A robust, RESTful backend service for a collaborative project management system. Engineered with a focus on security, role-based access control (RBAC), and hierarchical data integrity.
+RESTful backend API built with Node.js, Express, and MongoDB. Implements session management with dual-token JWT rotation via HTTPOnly cookies, email verification workflows, input validation middleware, and centralized error handling.
 
-![NodeJS](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white) ![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white) ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white) ![JWT](https://img.shields.io/badge/JWT-black?style=for-the-badge&logo=JSON%20web%20tokens)
+## Architecture and design
 
-## 📋 Engineering Overview
+The service follows a layered architecture to keep routing, input sanitization, business logic, and database operations decoupled:
 
-This project is not just a CRUD application. It is architected to solve the complexities of team collaboration, secure authentication, and state management.
+```
+Request -> CORS / Cookie Parser -> Router -> express-validator -> Controller (asyncHandler) -> Mongoose Model
+                                                                       |
+                                                               (Throws ApiError)
+                                                                       v
+                                                           Centralized errorHandler -> JSON Response
+```
 
-### Core Architecture
-* **Layered Architecture:** Strict separation of concerns between Routes, Controllers, and Models for maintainability.
-* **Security First:**
-    * **Token Rotation:** Implements Access & Refresh token rotation to prevent session hijacking.
-    * **Input Sanitization:** Uses `express-validator` middleware to validate all incoming data before it reaches the controller.
-    * **Secure Headers:** CORS configuration restricts access to trusted origins only.
+### Core mechanisms
 
-## ✨ Key Features
+* **Session and token rotation:** Authentication issues a short-lived access token and a long-lived refresh token. Both are delivered in HTTPOnly, secure cookies to mitigate client-side script access. When the client hits `/refresh-token`, the stored refresh token is verified against MongoDB, invalidated, and replaced with a newly generated pair.
+* **Input validation pipeline:** Route handlers use `express-validator` schemas before controller execution. Validation failures short-circuit with HTTP 422 and a structured list of field-level errors.
+* **Centralized error handling:** All asynchronous controllers run through an `asyncHandler` wrapper. Controller exceptions throw instances of `ApiError`, which pass to a top-level error middleware that guarantees predictable JSON responses across all status codes.
+* **Email verification and recovery:** Uses Nodemailer and Mailgen to send HTML verification emails and password reset links with time-bounded, SHA-256 hashed temporary tokens.
 
-* **🔐 Advanced Auth:** Secure registration flow with email verification (Nodemailer/Mailgen) and password resets.
-* **🛡️ Granular RBAC:** distinct permission levels for **Admins** (system wide), **Project Admins** (project scope), and **Members**.
-* **📂 Hierarchical Data:** Handles complex relationships: Projects → Tasks → Subtasks.
-* **⚡ Resilient Error Handling:** Centralized `ApiError` class ensures consistent error responses across the entire application.
+## Endpoints
 
-## 🛠️ Tech Stack & Utilities
+Base URL: `/api/v1`
 
-* **Runtime:** Node.js & Express.js
-* **Database:** MongoDB with Mongoose ODM
-* **Validation:** Express-Validator
-* **Async Handling:** Custom `asyncHandler` wrapper to avoid repetitive try-catch blocks.
+### Healthcheck
 
-## 🏗️ System Architecture
+| Method | Endpoint | Auth | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/healthcheck` | Public | Returns service status and liveness confirmation |
 
-The application follows a production-ready **MVC (Model-View-Controller)** pattern to ensure separation of concerns and scalability.
+### Authentication and sessions
 
-### Data Flow Strategy
-1.  **Request Entry:** Client hits the API Route `(src/routes/*.js)`.
-2.  **Security Layer:** Request passes through Middleware `(src/middlewares)`:
-    * **CORS:** Origin validation.
-    * **Cookie Parser:** extracting secure HTTPOnly cookies.
-    * **Validation:** `express-validator` sanitizes inputs.
-3.  **Business Logic:** Controllers `(src/controllers)` handle the complexity, stripping logic away from routes.
-    * *Example:* `registerUser` handles the transaction, hashing, and token generation.
-4.  **Data Access:** Mongoose Models `(src/models)` strictly define the schema and handle DB interactions.
-5.  **Utilities:** Reusable helpers like `AsyncHandler` and `ApiError` standardize responses across the system.
+| Method | Endpoint | Auth | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/auth/register` | Public | Register user account and trigger verification email |
+| `GET` | `/auth/verify-email/:verificationToken` | Public | Verify account email address |
+| `POST` | `/auth/login` | Public | Authenticate user and issue access and refresh cookies |
+| `POST` | `/auth/refresh-token` | Public | Rotate refresh token and issue new access token |
+| `POST` | `/auth/forgot-password` | Public | Generate time-limited password reset link |
+| `POST` | `/auth/reset-password/:resetToken` | Public | Set new password using reset token |
+| `GET` | `/auth/current-user` | Protected | Fetch authenticated user profile |
+| `POST` | `/auth/change-password` | Protected | Update password for authenticated user |
+| `POST` | `/auth/resend-email-verification` | Protected | Trigger new verification email for unverified user |
+| `POST` | `/auth/logout` | Protected | Invalidate refresh token and clear session cookies |
 
-## 🚀 Getting Started
+## Project layout
 
-1.  **Clone the repository**
-    ```bash
-    git clone [https://github.com/YOUR_USERNAME/project-camp-backend.git](https://github.com/YOUR_USERNAME/project-camp-backend.git)
-    cd project-camp-backend
-    ```
+```
+src/
+├── controllers/      # Request handlers and business logic
+├── db/               # Database connection logic
+├── middlewares/      # Authentication, validation, and error middlewares
+├── models/           # Mongoose schemas, hooks, and instance methods
+├── routes/           # Express route definitions
+├── utils/            # ApiError, ApiResponse, asyncHandler, and mail utilities
+├── validators/       # Input validation schemas (express-validator)
+├── app.js            # Express app assembly and middleware configuration
+└── index.js          # Server entry point and database initialization
+```
 
-2.  **Install Dependencies**
-    ```bash
-    npm install
-    ```
+## Setup and local development
 
-3.  **Environment Setup**
-    Create a `.env` file in the root directory:
-    ```env
-    PORT=8000
-    MONGODB_URI=your_mongodb_connection_string
-    CORS_ORIGIN=http://localhost:5173
-    ACCESS_TOKEN_SECRET=your_access_secret
-    ACCESS_TOKEN_EXPIRY=1d
-    REFRESH_TOKEN_SECRET=your_refresh_secret
-    REFRESH_TOKEN_EXPIRY=10d
-    ```
+### Prerequisites
 
-4.  **Run the Server**
-    ```bash
-    npm run dev
-    ```
+* Node.js 18 or later
+* MongoDB instance (local or Atlas)
+* SMTP credentials (such as Mailtrap) for email delivery
 
-## 👨‍💻 Author
+### Installation
 
-**Anurag Bhatt**
-* Full Stack Developer
----
-*This project strictly follows the architecture defined in the [Design Document](PRD.md).*
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/production-ready-backend-api.git
+   cd production-ready-backend-api
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Configure environment variables:
+   Copy `.env.example` to `.env` and fill in your values:
+   ```bash
+   cp .env.example .env
+   ```
+
+   Required environment variables:
+   ```env
+   PORT=8000
+   NODE_ENV=development
+   CORS_ORIGIN=http://localhost:5173
+   MONGO_URI=mongodb://127.0.0.1:27017/production-ready-backend-api
+   ACCESS_TOKEN_SECRET=your_access_token_secret
+   ACCESS_TOKEN_EXPIRY=1d
+   REFRESH_TOKEN_SECRET=your_refresh_token_secret
+   REFRESH_TOKEN_EXPIRY=10d
+   MAILTRAP_SMTP_HOST=sandbox.smtp.mailtrap.io
+   MAILTRAP_SMTP_PORT=2525
+   MAILTRAP_SMTP_USER=your_smtp_user
+   MAILTRAP_SMTP_PASS=your_smtp_password
+   ```
+
+4. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+   The server will start at `http://localhost:8000`.
+
+## Response format
+
+All endpoints return a standardized JSON structure.
+
+### Success response
+
+```json
+{
+  "statusCode": 200,
+  "data": {
+    "user": {
+      "_id": "66d1234567890abcdef12345",
+      "username": "janedoe",
+      "email": "jane@example.com",
+      "isEmailVerified": false
+    }
+  },
+  "message": "User registered successfully",
+  "success": true
+}
+```
+
+### Error response
+
+```json
+{
+  "statusCode": 422,
+  "message": "Received data is not valid",
+  "success": false,
+  "errors": [
+    {
+      "email": "Email is invalid"
+    }
+  ]
+}
+```
+
+## License
+
+ISC
